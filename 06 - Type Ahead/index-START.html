@@ -1,23 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Type Ahead 👀</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="https://fav.farm/🔥" />
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Type Ahead 👀</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="https://fav.farm/🔥" />
+    <script src="helper.js"></script>
+  </head>
+  <body>
+    <form class="search-form">
+      <input type="text" class="search" placeholder="City or State" />
+      <ul class="suggestions">
+        <li>Filter for a city</li>
+        <li>or a state</li>
+      </ul>
+    </form>
+    <script>
+      const endpoint =
+        "https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json";
 
-  <form class="search-form">
-    <input type="text" class="search" placeholder="City or State">
-    <ul class="suggestions">
-      <li>Filter for a city</li>
-      <li>or a state</li>
-    </ul>
-  </form>
-<script>
-const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+      let locations = [];
 
-</script>
-</body>
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+        message:
+          "To get a better experience, please allow this website to access your location. It will allow us to sort the results by distance.",
+      };
+
+      /**
+       * If the user allows the browser to access their location, we will use
+       * fetch the data and calculate the distance between the user and each
+       * location and store that data in the locations array.
+       */
+      const successCallback = (position) => {
+        const { latitude, longitude } = position.coords;
+
+        fetch(endpoint)
+          .then((response) => response.json())
+          .then((data) => {
+            data.forEach((location) => {
+              location.distance = calculateDistance(latitude, longitude, location.latitude, location.longitude);
+              locations.push(location);
+            });
+          });
+      };
+
+      /**
+       * If the user denies the browser to access their location, we will simply
+       * fetch the data and store it in the locations array.
+       */
+      const errorCallback = (error) => {
+        fetch(endpoint)
+          .then((response) => response.json())
+          .then((data) => (locations.length ? (locations = data) : locations.push(...data)));
+      };
+
+      navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
+
+      function resultHTML(values) {
+        const { cityName, stateName, population, distance } = values;
+        if (distance)
+          return `
+        <li>
+          <span class="name">${cityName}, ${stateName}</span>
+          <div class="info">
+            <span class="population">Pop: ${numberWithCommas(population)}</span>
+            <span class="distance">${distance?.toFixed(2)} km</span>
+          </div>
+        </li>
+        `;
+        return `
+        <li>
+          <span class="name">${cityName}, ${stateName}</span>
+          <span class="population">${numberWithCommas(population)}</span>
+        </li>
+        `;
+      }
+
+      function displayMatches() {
+        const matchedResults = findMatches(this.value, locations);
+        const html = matchedResults
+          .map((location) => {
+            const regex = new RegExp(this.value, "gi");
+            const cityName = location.city.replace(regex, `<span class="hl">${this.value}</span>`);
+            const stateName = location.state.replace(regex, `<span class="hl">${this.value}</span>`);
+            return resultHTML({ cityName, stateName, population: location.population, distance: location?.distance });
+          })
+          .join("");
+        suggestions.innerHTML = html;
+      }
+
+      function findMatches(userInput, locations) {
+        return locations
+          .filter((location) => {
+            // gi -> global and case insensitive
+            const regex = new RegExp(userInput, "gi");
+            return location.city.match(regex) || location.state.match(regex);
+          })
+          .sort((a, b) => a.distance - b.distance);
+      }
+
+      const searchInput = document.querySelector(".search");
+      const suggestions = document.querySelector(".suggestions");
+
+      /**
+       * Event listeners, change, only fires when the value of the input changes
+       * and you click off of the input. Keyup fires every time you press a key
+       * on the keyboard.
+       */
+      searchInput.addEventListener("change", displayMatches);
+      searchInput.addEventListener("keyup", displayMatches);
+    </script>
+  </body>
 </html>
