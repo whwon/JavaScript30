@@ -1,20 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>HTML5 Canvas</title>
-  <link rel="icon" href="https://fav.farm/🔥" />
-</head>
-<body>
-<canvas id="draw" width="800" height="800"></canvas>
-<script>
-</script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>HTML5 Canvas</title>
+    <link rel="icon" href="https://fav.farm/🔥" />
+  </head>
+  <body>
+    <canvas id="draw" width="800" height="800"></canvas>
+    <button onclick="resetCanvas()">Reset</button>
+    <script>
+      const canvas = document.querySelector("#draw");
+      const ctx = canvas.getContext("2d");
+      // Since we add the button, we need to have the canvas width and heigh accommodate for that.
+      canvas.width = window.innerWidth - 10;
+      canvas.height = window.innerHeight - 15;
+      ctx.strokeStyle = "#BADA55";
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.lineWidth = 20;
 
-<style>
-  html, body {
-    margin: 0;
-  }
-</style>
+      let isDrawing = false;
+      /**
+       * In order to actually draw we need to know the coordinates.
+       * For example, if we were drawing a line we need to know the point
+       * in which the users mouse first lands and its X and Y coordinates.
+       * Then we would need to know the end X and Y where the users mouse
+       * clicks off of the canvas.
+       */
+      let lastX = 0;
+      let lastY = 0;
+      // Our HSL default color hue
+      let hue = 0;
 
-</body>
+      function draw(e) {
+        if (!isDrawing) return; // return when not mouse down
+        ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        lastX = e.offsetX;
+        lastY = e.offsetY;
+        hue++;
+        if (hue >= 360) hue = 0;
+      }
+
+      function resetCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // When the user clicks and holds the click while moving on the canvas
+      canvas.addEventListener("mousemove", draw);
+      // When the user clicks on the canvas
+      canvas.addEventListener("mousedown", (e) => {
+        isDrawing = true;
+        lastX = e.offsetX;
+        lastY = e.offsetY;
+      });
+      // When a mouse click is released
+      canvas.addEventListener("mouseup", () => (isDrawing = false));
+      // When the mouse is no longer visibly within the canvas. Like clicking off of the screen.
+      canvas.addEventListener("mouseout", () => (isDrawing = false));
+    </script>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+      }
+      button {
+        position: absolute;
+        top: 15px;
+        right: 10px;
+        z-index: 1;
+      }
+    </style>
+  </body>
 </html>
