@@ -79,6 +79,15 @@
         `;
       }
 
+      let timeoutId;
+      function debounce(callback) {
+        clearTimeout();
+
+        timeoutId = setTimeout(() => {
+          callback();
+        }, 1000);
+      }
+
       function displayMatches() {
         const matchedResults = findMatches(this.value, locations);
         const html = matchedResults
@@ -110,7 +119,7 @@
        * and you click off of the input. Keyup fires every time you press a key
        * on the keyboard.
        */
-      searchInput.addEventListener("change", displayMatches);
+      searchInput.addEventListener("change", debounce(displayMatches));
       searchInput.addEventListener("keyup", displayMatches);
     </script>
   </body>
